@@ -276,7 +276,7 @@ def download_bettertokenizer(out: ModelOutput = ModelOutput("segment/bettertoken
 
 @modelbuilder(
     "Token list for BetterWordTokenizer",
-    language=["swe"],
+    language=["swe", "fao"],
     config=[
         Config(
             "segment.token_wordlist_segmenter",
