@@ -34,9 +34,13 @@ install_editable() {
 install_editable "bendingar" "bendingar"
 install_editable "fo-tokenizer" "fo-tokenizer"
 
+# Remove legacy package names to avoid duplicate Sparv plugin entry points.
+uv pip uninstall --python "$VENV_PY" leitord-og-mark-sparv >/dev/null 2>&1 || true
+uv pip uninstall --python "$VENV_PY" mmg-upplysingar-sparv >/dev/null 2>&1 || true
+
 # Custom Sparv plugins used by configs
-install_editable "leitord-og-mark-sparv" "leitord_og_mark plugin"
-install_editable "mmg-upplysingar-sparv" "mmg_metadata plugin"
+install_editable "sparv-leitord-og-mark" "leitord_og_mark plugin"
+install_editable "sparv-mmg-upplysingar" "mmg_metadata plugin"
 
 echo
 echo "Custom plugins installed into $REPO_ROOT/.venv"

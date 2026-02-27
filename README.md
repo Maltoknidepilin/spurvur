@@ -110,8 +110,8 @@ install them once into this repo's `.venv`:
 make custom-plugins-install
 ```
 
-This installs local editable repos from the workspace (including `leitord-og-mark-sparv`
-which provides both `leitord_og_mark` and `msd_tab_split`, plus `mmg-upplysingar-sparv`
+This installs local editable repos from the workspace (including `sparv-leitord-og-mark`
+which provides both `leitord_og_mark` and `msd_tab_split`, plus `sparv-mmg-upplysingar`
 and local dependencies).
 
 To remove this setup later, run:
