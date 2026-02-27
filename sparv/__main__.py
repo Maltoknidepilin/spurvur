@@ -313,7 +313,9 @@ def main(argv: list[str] | None = None) -> bool:
     modules_parser.add_argument("--uninstallers", action="store_true", help="List info for uninstallers")
     modules_parser.add_argument("--all", action="store_true", help="List info for all module types")
     modules_parser.add_argument("--json", action="store_true", help="Print output in JSON format")
-    modules_parser.add_argument("names", nargs="*", default=[], help="Specific module(s) or annotator(s) to display")
+    modules_parser.add_argument(
+        "names", nargs="*", default=[], help="Specific module(s) or annotator(s) to display"
+    ).completer = Completer("modules")
 
     subparsers.add_parser(
         "presets", help=help["presets"], description=help["presets"], formatter_class=RichHelpFormatter
@@ -540,10 +542,12 @@ def main(argv: list[str] | None = None) -> bool:
             import appdirs
 
             try:
-                # Create empty autocomplete cache if it doesn't exist
-                # The cache contents will only be populated if this file exists
-                Path(appdirs.user_config_dir("sparv"), "autocomplete").touch()
-            except FileNotFoundError:
+                # Create empty autocomplete cache if it doesn't exist.
+                # The cache contents will only be populated if this file exists.
+                cache_file = Path(appdirs.user_config_dir("sparv"), "autocomplete")
+                cache_file.parent.mkdir(parents=True, exist_ok=True)
+                cache_file.touch(exist_ok=True)
+            except OSError:
                 pass
             complete_arguments = ["-o nospace", "-o default", "-o bashdefault"]
             if args.enable:

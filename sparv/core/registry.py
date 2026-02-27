@@ -201,7 +201,8 @@ def find_modules(no_import: bool = False, find_custom: bool = False, skip_langua
             continue
 
         # Check compatibility with Sparv version
-        for requirement in entry_point.dist.requires:
+        # Some distributions may not declare any requirements (requires=None).
+        for requirement in (entry_point.dist.requires or []):
             req = Requirement(requirement)
             if req.name in {"sparv", "sparv-pipeline"}:
                 req.specifier.prereleases = True  # Accept pre-release versions of Sparv

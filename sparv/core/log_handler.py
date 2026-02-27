@@ -878,7 +878,10 @@ class SparvLogHandler:
                     )
                 else:
                     full_message = error_message
-                self.logger.error(full_message or "An unknown error occurred.", extra={"to_file": True})
+                # If the file logger was not initialized (e.g. error occurred very early), don't crash while
+                # reporting the original error.
+                if self.logger:
+                    self.logger.error(full_message or "An unknown error occurred.", extra={"to_file": True})
         else:
             spacer = ""
             if self.export_dirs:

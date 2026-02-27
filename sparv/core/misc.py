@@ -10,6 +10,66 @@ from typing import cast
 
 from sparv.core.logger import SparvLogger, ensure_logger_class
 
+from typing import TYPE_CHECKING
+
+
+# Ensure Sparv-specific logging methods/levels exist even when the main log handler
+# (which imports heavy dependencies like rich/snakemake) has not been imported.
+_SPARV_INTERNAL_LEVEL = 100
+_SPARV_PROGRESS_LEVEL = 90
+_SPARV_FINAL_LEVEL = 80
+
+
+def _ensure_sparv_logger_methods() -> None:
+    if logging.getLevelName(_SPARV_INTERNAL_LEVEL) == f"Level {_SPARV_INTERNAL_LEVEL}":
+        logging.addLevelName(_SPARV_INTERNAL_LEVEL, "INTERNAL")
+    if logging.getLevelName(_SPARV_PROGRESS_LEVEL) == f"Level {_SPARV_PROGRESS_LEVEL}":
+        logging.addLevelName(_SPARV_PROGRESS_LEVEL, "PROGRESS")
+    if logging.getLevelName(_SPARV_FINAL_LEVEL) == f"Level {_SPARV_FINAL_LEVEL}":
+        logging.addLevelName(_SPARV_FINAL_LEVEL, "FINAL")
+
+    if not hasattr(logging.Logger, "progress"):
+
+        def progress(
+            self: logging.Logger, progress: int | None = None, advance: int | None = None, total: int | None = None
+        ) -> None:
+            if not self.isEnabledFor(_SPARV_INTERNAL_LEVEL):
+                return
+
+            job = None
+            file = None
+            try:
+                # Available in the main process when the log handler is active.
+                from sparv.core.log_handler import CurrentProgress  # noqa: PLC0415
+
+                job = CurrentProgress.current_job
+                file = CurrentProgress.current_file
+            except Exception:
+                pass
+
+            self._log(
+                _SPARV_INTERNAL_LEVEL,
+                "progress",
+                (),
+                extra={"progress": progress, "advance": advance, "total": total, "job": job, "file": file},
+            )
+
+        logging.Logger.progress = progress  # type: ignore[attr-defined]
+
+    if not hasattr(logging.Logger, "export_dirs"):
+
+        def export_dirs(self: logging.Logger, dirs: list[str]) -> None:
+            if self.isEnabledFor(_SPARV_INTERNAL_LEVEL):
+                self._log(_SPARV_INTERNAL_LEVEL, "export_dirs", (), extra={"export_dirs": dirs})
+
+        logging.Logger.export_dirs = export_dirs  # type: ignore[attr-defined]
+
+
+_ensure_sparv_logger_methods()
+
+if TYPE_CHECKING:
+    from sparv.core.log_handler import SparvLogger
+
 
 class SparvErrorMessage(Exception):  # noqa: N818
     """Exception used to notify users of errors in a friendly way without displaying a traceback."""

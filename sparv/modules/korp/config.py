@@ -325,7 +325,29 @@ def config(
     if filters:
         config_dict["attribute_filters"] = []
         for a in filters:
-            config_dict["attribute_filters"].append(cwb_escape(export_names[a].replace(":", "_")))
+            key = a
+
+            # The export name mapping may use different representations of the annotation key depending on
+            # how names are resolved and whether module namespaces are removed.
+            candidates = [key]
+            if isinstance(key, str) and ":" in key:
+                struct, attr = key.split(":", 1)
+
+                # Try without angle brackets around the struct (<text> -> text)
+                if struct.startswith("<") and struct.endswith(">"):
+                    candidates.append(f"{struct[1:-1]}:{attr}")
+
+                if remove_namespaces and "." in attr:
+                    attr_stripped = attr.rsplit(".", 1)[-1]
+                    candidates.append(f"{struct}:{attr_stripped}")
+                    if struct.startswith("<") and struct.endswith(">"):
+                        candidates.append(f"{struct[1:-1]}:{attr_stripped}")
+
+            resolved_key = next((c for c in candidates if c in export_names), None)
+            if not resolved_key:
+                raise KeyError(a)
+
+            config_dict["attribute_filters"].append(cwb_escape(export_names[resolved_key].replace(":", "_")))
 
     with Path(out).open("w", encoding="utf-8") as out_yaml:
         out_yaml.write(

@@ -189,13 +189,28 @@ def update_autocompletion_cache() -> None:
         import pickle  # noqa: PLC0415
 
         # Collect data for cache
-        new_cache = dict.fromkeys(("export", "install", "uninstall", "model"))
+        new_cache = dict.fromkeys(("export", "install", "uninstall", "model", "modules"))
         for target_type in new_cache:
+            if target_type == "modules":
+                continue
             new_cache[target_type] = {
                 t[0]: t[1].split("\n", 1)[0]
                 for t in getattr(snake_storage, f"{target_type}_targets")
                 if not t[0].startswith("custom.")
             }
+
+        # Module/annotator name completion for `sparv modules`
+        modules_cache = {}
+        for module_name, module in registry.modules.items():
+            if module_name.startswith("custom."):
+                continue
+            desc = (module.description or "").split("\n", 1)[0].strip() or "module"
+            modules_cache[module_name] = desc
+        for module_name, annotators in snake_storage.all_annotators.items():
+            for f_name, annotator_data in annotators.items():
+                desc = annotator_data["rule"].description.split("\n", 1)[0].strip() if annotator_data.get("rule") else ""
+                modules_cache[f"{module_name}:{f_name}"] = desc or "annotator"
+        new_cache["modules"] = modules_cache
 
         new_cache["annotate"] = {}
         for target_type in ("named", "custom", "import"):

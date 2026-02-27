@@ -19,7 +19,10 @@ __config__ = [
         default="swe",
         description="Language of source files (ISO 639-3)",
         datatype=str | None,
-        choices=lambda: [*sorted({l.split("-")[0] for l in registry.languages}), None],
+        # Accept any ISO 639-3 code (three lower-case letters). The set of *supported* languages
+        # depends on which modules/plugins are installed and is shown by `sparv languages`, but
+        # corpora may still use other language codes (e.g. when using external preprocessing).
+        pattern=r"^[a-z]{3}$",
     ),
     Config(
         "metadata.variety",

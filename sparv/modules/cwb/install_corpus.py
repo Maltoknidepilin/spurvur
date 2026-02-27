@@ -28,6 +28,7 @@ def install_corpus(
     info_file: ExportInput = ExportInput("cwb.encoded/data/.info"),
     target_data_dir: str = Config("cwb.remote_data_dir"),
     target_registry_dir: str = Config("cwb.remote_registry_dir"),
+    registry_home_dir: str | None = Config("cwb.registry_home_dir"),
     # This argument is needed by Snakemake to trigger encoding of the corpus if needed
     _marker: ExportInput = ExportInput("cwb.encoded/data/.marker"),
 ) -> None:
@@ -52,6 +53,7 @@ def install_corpus(
         registry_file=registry_file,
         target_data_dir=target_data_dir,
         target_registry_dir=target_registry_dir,
+        registry_home_dir=registry_home_dir,
     )
     uninstall_marker.remove()
 
@@ -66,6 +68,7 @@ def install_corpus_scrambled(
     info_file: ExportInput = ExportInput("cwb.encoded_scrambled/data/.info"),
     target_data_dir: str = Config("cwb.remote_data_dir"),
     target_registry_dir: str = Config("cwb.remote_registry_dir"),
+    registry_home_dir: str | None = Config("cwb.registry_home_dir"),
     # This argument is needed by Snakemake to trigger encoding of the corpus if needed
     _scrambled_marker: ExportInput = ExportInput("cwb.encoded_scrambled/data/.scrambled_marker"),
 ) -> None:
@@ -90,6 +93,7 @@ def install_corpus_scrambled(
         registry_file=registry_file,
         target_data_dir=target_data_dir,
         target_registry_dir=target_registry_dir,
+        registry_home_dir=registry_home_dir,
     )
     uninstall_marker.remove()
 
@@ -138,6 +142,7 @@ def sync_cwb(
     registry_file: ExportInput,
     target_data_dir: str,
     target_registry_dir: str,
+    registry_home_dir: str | None = None,
 ) -> None:
     """Install CWB datafiles on server, by rsyncing CWB datadir and registry.
 
@@ -166,15 +171,16 @@ def sync_cwb(
     source_registry_file = Path(source_registry_dir) / (corpus + ".tmp")
 
     # Fix absolute paths in registry file
+    home_base = (registry_home_dir or "").strip() or target_data_dir
     with (
         Path(registry_file).open(encoding="utf-8") as registry_in,
         source_registry_file.open("w", encoding="utf-8") as registry_out,
     ):
         for line in registry_in:
             if line.startswith("HOME"):
-                line = f"HOME {target_data_dir}/{corpus}\n"  # noqa: PLW2901
+                line = f"HOME {home_base}/{corpus}\n"  # noqa: PLW2901
             elif line.startswith("INFO"):
-                line = f"INFO {target_data_dir}/{corpus}/.info\n"  # noqa: PLW2901
+                line = f"INFO {home_base}/{corpus}/.info\n"  # noqa: PLW2901
 
             registry_out.write(line)
 

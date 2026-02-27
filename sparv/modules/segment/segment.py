@@ -95,6 +95,18 @@ def tokenize(
             description="Path to model",
             datatype=str,
         ),
+        Config(
+            "segment.sentence_abbreviations",
+            default=[],
+            description="List of abbreviations that should not trigger sentence boundaries (e.g. ['dr', 't.ex'])",
+            datatype=list[str],
+        ),
+        Config(
+            "segment.sentence_not_abbreviations",
+            default=[],
+            description="List of short forms that should NOT be treated as abbreviations (e.g. ['aka'])",
+            datatype=list[str],
+        ),
     ],
 )
 def sentence(
@@ -104,10 +116,19 @@ def sentence(
     segmenter: str = Config("segment.sentence_segmenter"),
     existing_segments: Annotation | None = Annotation("[segment.existing_sentences]"),
     model: Model | None = Model("[segment.sentence_model]"),
+    abbreviations: list[str] = Config("segment.sentence_abbreviations"),
+    not_abbreviations: list[str] = Config("segment.sentence_not_abbreviations"),
 ) -> None:
     """Split text into sentences."""
     do_segmentation(
-        text=text, out=out, chunk=chunk, segmenter=segmenter, existing_segments=existing_segments, model=model
+        text=text,
+        out=out,
+        chunk=chunk,
+        segmenter=segmenter,
+        existing_segments=existing_segments,
+        model=model,
+        abbreviations=abbreviations,
+        not_abbreviations=not_abbreviations,
     )
 
 
@@ -152,6 +173,8 @@ def do_segmentation(
     existing_segments: Annotation | None = None,
     model: Model | None = None,
     token_list: Model | None = None,
+    abbreviations: list[str] | None = None,
+    not_abbreviations: list[str] | None = None,
 ) -> None:
     """Segment all chunks (e.g. sentences) into smaller "tokens" (e.g. words), and annotate them as "element" (e.g. w).
 
@@ -171,6 +194,12 @@ def do_segmentation(
         segmenter_args["model"] = model_arg
     if token_list and "token_list" in inspect.getfullargspec(segmenter).args:
         segmenter_args["token_list"] = token_list.path
+
+    if abbreviations and "abbreviations" in inspect.getfullargspec(segmenter).args:
+        segmenter_args["abbreviations"] = abbreviations
+
+    if not_abbreviations and "not_abbreviations" in inspect.getfullargspec(segmenter).args:
+        segmenter_args["not_abbreviations"] = not_abbreviations
 
     segmenter = segmenter(**segmenter_args)
     assert hasattr(segmenter, "span_tokenize"), f"Segmenter needs a 'span_tokenize' method: {segmenter!r}"
@@ -535,9 +564,39 @@ class BetterWordTokenizer:
 class PunktSentenceTokenizer(nltk.PunktSentenceTokenizer):
     """A simple subclass of nltk.PunktSentenceTokenizer to add the required 'model' parameter."""
 
-    def __init__(self, model: Path) -> None:
+    def __init__(
+        self,
+        model: object,
+        abbreviations: list[str] | None = None,
+        not_abbreviations: list[str] | None = None,
+    ) -> None:
         """Initialize class."""
-        super().__init__(str(model))
+        # In Sparv, sentence models are typically pickled PunktParameters objects.
+        # NLTK accepts PunktParameters directly, but not if we cast it to a string.
+        if isinstance(model, (str, Path)):
+            super().__init__(str(model))
+        else:
+            super().__init__(model)
+
+        if abbreviations:
+            abbr_set = {a.strip().rstrip(".").lower() for a in abbreviations if a and a.strip()}
+            if abbr_set:
+                try:
+                    self._params.abbrev_types.update(abbr_set)
+                except Exception:
+                    # If NLTK changes internals, skip silently (worst case: no extra abbreviations).
+                    pass
+
+        # Allow users to explicitly remove items from Punkt's abbreviation set.
+        # Useful for short forms that should still end a sentence (e.g. "aka.").
+        if not_abbreviations:
+            not_abbr_set = {a.strip().rstrip(".").lower() for a in not_abbreviations if a and a.strip()}
+            if not_abbr_set:
+                try:
+                    for a in not_abbr_set:
+                        self._params.abbrev_types.discard(a)
+                except Exception:
+                    pass
 
 
 class CRFTokenizer:

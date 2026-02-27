@@ -213,7 +213,7 @@ def print_modules_info(
 
                                 for cfg_datatype in cfg_datatypes:
                                     if cfg_datatype is str:
-                                        datatypes.append(cfg_datatype.__name__)
+                                        datatypes.append(get_name(cfg_datatype))
                                         if config_object.choices:
                                             config_info["choices"] = (
                                                 config_object.choices()
@@ -223,7 +223,7 @@ def print_modules_info(
                                         if config_object.pattern:
                                             config_info["pattern"] = config_object.pattern
                                     elif cfg_datatype in {int, float}:
-                                        datatypes.append(cfg_datatype.__name__)
+                                        datatypes.append(get_name(cfg_datatype))
                                         if config_object.min_value is not None:
                                             config_info["min_value"] = config_object.min_value
                                         if config_object.max_value is not None:

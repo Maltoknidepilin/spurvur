@@ -33,3 +33,5 @@ docs/site*/
 # Testing / logs
 .pytest_cache/
 logs/
+
+.sparv-data/

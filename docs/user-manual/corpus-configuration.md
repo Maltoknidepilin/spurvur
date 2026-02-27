@@ -529,8 +529,23 @@ For the `misc:affix` annotator, the parameters are:
 2. `chunk`: The input annotation to be modified.
 3. `prefix` and `suffix`: The strings to be added as a prefix and/or suffix.
 
-To include this annotation in your corpus, add `<token>:misc.word.affixed` to an annotations list in your corpus config
-(e.g., `export.annotations`). This example is applied in the standard-swe [example
+Another useful utility annotator is `misc:inherit_attr`, which copies an attribute from a parent structural annotation
+to a child structural annotation. This can be handy when you want to build IDs or other attributes on e.g. sentences
+based on paragraph-level attributes.
+
+Example:
+
+```yaml
+custom_annotations:
+    - annotator: misc:inherit_attr
+      params:
+          parent: <paragraph>:misc.affixed_p
+          child: <sentence>
+          out: <sentence>:misc.inherited_paragraph_id
+```
+
+To include a custom annotation in your corpus, add its output annotation name to an annotations list in your corpus
+config (e.g., `export.annotations`). The `misc:affix` example above is applied in the standard-swe [example
 corpus](https://github.com/spraakbanken/sparv/releases/latest/download/example_corpora.zip).
 
 You can use the same annotator multiple times with different output names:

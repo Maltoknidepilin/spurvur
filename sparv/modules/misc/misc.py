@@ -272,6 +272,23 @@ def inherit(
     out.write(out_values)
 
 
+@annotator("Inherit an attribute from a parent annotation to a child annotation")
+def inherit_attr(parent: Annotation, child: Annotation, out: Output) -> None:
+    """Inherit attribute from a structural parent annotation to a child.
+
+    This utility version is intended for use via the `custom_annotations` section.
+
+    Args:
+        parent: Structural parent annotation with the attribute to inherit.
+        child: Child annotation.
+        out: Output attribute for the child annotation, with the inherited values.
+    """
+    child_parents = child.get_parents(parent)
+    attr_values = list(parent.read())
+    out_values = [attr_values[p] if p is not None else "" for p in child_parents]
+    out.write(out_values)
+
+
 # TODO: Do we still need this? struct_to_token probably mostly replaces it
 def chain(out, annotations, default=None):  # noqa
     """Create a functional composition of a list of annotations.

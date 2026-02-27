@@ -35,7 +35,7 @@ virtual environment and install the dependencies.
    uv sync
    ```
 
-   This will create a virtual environment in the `.venv` directory and install the dependencies listed in
+   This will create a virtual environment in the `.venv` directory and install the dependencies listed in 
    `pyproject.toml`, including the development dependencies.
 3. Either activate the virtual environment manually:
 
@@ -44,6 +44,105 @@ virtual environment and install the dependencies.
    ```
 
    or use `uv run <command>` to run commands inside the virtual environment without activating it.
+
+### Shell autocompletion (easy setup)
+
+For a one-time setup of a user-friendly `sparv` command with tab completion (without manually editing shell config), run:
+
+```sh
+./scripts/install-shell-completion.sh
+```
+
+Or use the Makefile shortcut:
+
+```sh
+make completion-install
+```
+
+Preview changes without writing to your shell rc file:
+
+```sh
+./scripts/install-shell-completion.sh --dry-run
+```
+
+Or:
+
+```sh
+make completion-install-dry-run
+```
+
+Then reload your shell config (zsh example):
+
+```sh
+source ~/.zshrc
+```
+
+After that, use:
+
+```sh
+sparv --help
+```
+
+This installs a small wrapper in your shell rc file so you can run `sparv ...` directly while it still uses `uv run` under the hood for this repository.
+
+It also sets a default repo-local data dir:
+
+```sh
+SPARV_DATADIR=<repo>/.sparv-data
+```
+
+On first-time setup, initialize that data dir once:
+
+```sh
+uv run --project . sparv setup --dir "$(pwd)/.sparv-data"
+```
+
+Or:
+
+```sh
+make completion-setup-datadir
+```
+
+If your corpus config uses local custom annotators (e.g. `leitord_og_mark`, `msd_tab_split`, `mmg_metadata`),
+install them once into this repo's `.venv`:
+
+```sh
+make custom-plugins-install
+```
+
+This installs local editable repos from the workspace (including `leitord-og-mark-sparv`
+which provides both `leitord_og_mark` and `msd_tab_split`, plus `mmg-upplysingar-sparv`
+and local dependencies).
+
+To remove this setup later, run:
+
+```sh
+./scripts/uninstall-shell-completion.sh
+```
+
+Then reload your shell config again (zsh example):
+
+```sh
+source ~/.zshrc
+```
+
+Or:
+
+```sh
+make completion-uninstall
+```
+
+Preview removal without writing changes:
+
+```sh
+./scripts/uninstall-shell-completion.sh --dry-run
+```
+
+Or:
+
+```sh
+make completion-uninstall-dry-run
+```
 
 Alternatively, you can set up a virtual environment manually using Python's built-in `venv` module and install the
 dependencies using pip:
