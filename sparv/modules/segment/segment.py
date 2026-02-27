@@ -254,7 +254,7 @@ def do_segmentation(
     logger.progress()
 
 
-@modelbuilder("Model for PunktSentenceTokenizer", language=["swe"])
+@modelbuilder("Model for PunktSentenceTokenizer", language=["swe", "fao"])
 def download_punkt_model(out: ModelOutput = ModelOutput("segment/punkt-nltk-svenska.pickle")) -> None:
     """Download model for use with PunktSentenceTokenizer.
 
