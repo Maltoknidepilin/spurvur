@@ -264,7 +264,7 @@ def download_punkt_model(out: ModelOutput = ModelOutput("segment/punkt-nltk-sven
     out.download("https://github.com/spraakbanken/sparv-models/raw/master/segment/punkt-nltk-svenska.pickle")
 
 
-@modelbuilder("Model for BetterWordTokenizer", language=["swe"])
+@modelbuilder("Model for BetterWordTokenizer", language=["swe", "fao"])
 def download_bettertokenizer(out: ModelOutput = ModelOutput("segment/bettertokenizer.sv")) -> None:
     """Download model for use with BetterWordTokenizer.
 
