@@ -32,7 +32,7 @@ install_editable() {
 
 # Core local deps used by custom plugins
 install_editable "bendingar" "bendingar"
-install_editable "fo-tokenizer" "fo-tokenizer"
+# install_editable "fo-tokenizer" "fo-tokenizer"
 
 # Custom Sparv plugins used by configs
 install_editable "sparv-leitord-og-mark" "leitord_og_mark plugin"
