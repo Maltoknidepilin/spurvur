@@ -4,6 +4,7 @@ import itertools
 import shlex
 import subprocess
 from collections import defaultdict
+from html import escape
 from pathlib import Path
 
 import markdown
@@ -90,6 +91,26 @@ LABELS = {
         Config("korp.custom_annotations", description="Custom Korp-annotations.", datatype=list[dict]),
         Config("korp.morphology", description="Pipe-separated list of morphologies used by the corpus", datatype=str),
         Config("korp.reading_mode", description="Reading mode configuration", datatype=dict),
+        Config(
+            "korp.license",
+            description=(
+                "Optional short multilingual Korp license text. When omitted, "
+                "korp.license_text and korp.license_target are used."
+            ),
+            datatype=dict | str,
+        ),
+        Config(
+            "korp.license_target",
+            default="",
+            description="Optional URL for the corpus license shown in Korp.",
+            datatype=str,
+        ),
+        Config(
+            "korp.license_text",
+            default={},
+            description="Optional multilingual corpus license labels shown in Korp.",
+            datatype=dict | str,
+        ),
         Config("korp.filters", description="List of annotations to use for filtering in Korp", datatype=list[str]),
         Config(
             "korp.hidden_annotations",
@@ -122,6 +143,9 @@ def config(
     korp_name: dict | None = Config("korp.name"),
     description: dict | None = Config("metadata.description"),
     short_description: dict | None = Config("metadata.short_description"),
+    license_override: dict | str | None = Config("korp.license"),
+    licence_target: str | None = Config("korp.license_target"),
+    licence_text: dict | str | None = Config("korp.license_text"),
     language: str = Config("metadata.language"),
     modes: list = Config("korp.modes"),
     protected: bool = Config("korp.protected"),
@@ -161,6 +185,9 @@ def config(
         korp_name: Optional name to use in Korp. If not set, `name` will be used.
         description: Corpus description.
         short_description: Short corpus description.
+        license_override: Optional short Korp-specific license text.
+        licence_target: Corpus-level Korp license URL.
+        licence_text: Corpus-level Korp license label.
         language: Corpus language.
         modes: List of modes and folders where the corpus will be available in Korp.
         protected: Whether the corpus is password protected.
@@ -201,6 +228,7 @@ def config(
     }
     optional = {
         "description": build_description(description, short_description),
+        "license": build_license(licence_text, licence_target, license_override),
         "title": corpus_name,
         "limited_access": protected,
         "custom_attributes": custom_annotations,
@@ -525,6 +553,54 @@ def build_description(description: dict | str | None, short_description: dict | 
             lang_dict[lang] = descr
 
     return lang_dict.get(None) or lang_dict
+
+
+def _inline_markdown(value: object) -> str:
+    """Render the small Markdown subset used in one-line Korp metadata."""
+    rendered = markdown.markdown(str(value)).strip()
+    if rendered.startswith("<p>") and rendered.endswith("</p>") and rendered.count("<p>") == 1:
+        return rendered[3:-4]
+    return rendered
+
+
+def _korp_language(language: object) -> str:
+    """Normalize TEI-style language keys to Korp's interface language keys."""
+    value = str(language)
+    return {"fo": "fao", "en": "eng", "sv": "swe"}.get(value, value)
+
+
+def build_license(
+    licence_text: dict | str | None,
+    licence_target: str | None,
+    license_override: dict | str | None,
+) -> dict[str, str] | str:
+    """Build compact Korp license HTML from the TEI licence or an override."""
+    if license_override:
+        if isinstance(license_override, dict):
+            return {
+                _korp_language(language): _inline_markdown(text)
+                for language, text in license_override.items()
+                if text
+            }
+        return _inline_markdown(license_override)
+
+    target = str(licence_target or "").strip()
+
+    def linked_label(label: object) -> str:
+        text = str(label or target).strip()
+        if not text:
+            return ""
+        if target:
+            return f'<a href="{escape(target, quote=True)}">{escape(text)}</a>'
+        return escape(text)
+
+    if isinstance(licence_text, dict):
+        return {
+            _korp_language(language): linked_label(text)
+            for language, text in licence_text.items()
+            if text or target
+        }
+    return linked_label(licence_text)
 
 
 def get_corpus_name(
