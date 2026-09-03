@@ -122,6 +122,8 @@ allowed-confusables = ["–"]  # "Confusable" Unicode characters to ignore when 
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Pyflakes: unused-import
+"sparv/modules/segment/faroese.py" = ["E501", "RUF001", "SIM905"]  # Static tokenizer data and regexes
+"tests/unit/test_segment.py" = ["RUF001"]  # Tests cover distinct apostrophe characters
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

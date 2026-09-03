@@ -150,6 +150,37 @@ def timespan_sql_no_dateinfo(
         source_files: All corpus source files.
         token: Token annotation.
     """
+    _create_undated_timespan_sql(corpus, out, source_files, token)
+
+
+@exporter("Undated timespan SQL data for use in Korp", order=3)
+def timespan_sql_undated(
+    corpus: Corpus = Corpus(),
+    out: Export = Export("korp.timespan/timespan.sql"),
+    source_files: AllSourceFilenames = AllSourceFilenames(),
+    token: AnnotationAllSourceFiles = AnnotationAllSourceFiles("<token>"),
+) -> None:
+    """Create an explicitly undated Korp timespan.
+
+    Use this exporter for corpora that retain retrieval timestamps as document
+    metadata but must not use those timestamps as dates in Korp's timeline.
+
+    Args:
+        corpus: Corpus ID.
+        out: Output SQL file.
+        source_files: All corpus source files.
+        token: Token annotation.
+    """
+    _create_undated_timespan_sql(corpus, out, source_files, token)
+
+
+def _create_undated_timespan_sql(
+    corpus: str,
+    out: Export,
+    source_files: list[str],
+    token: AnnotationAllSourceFiles,
+) -> None:
+    """Write a Korp timespan with every token assigned to the undated bucket."""
     corpus_name = corpus.upper()
     token_count = 0
 

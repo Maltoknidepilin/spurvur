@@ -9,8 +9,26 @@ from pathlib import Path
 
 import nltk
 
-from sparv.api import Annotation, Config, Model, ModelOutput, Output, Text, annotator, get_logger, modelbuilder, util
+from sparv.api import (
+    Annotation,
+    Config,
+    Language,
+    Model,
+    ModelOutput,
+    Output,
+    Text,
+    annotator,
+    get_logger,
+    modelbuilder,
+    util,
+)
 from sparv.modules.saldo.saldo_model import split_triple
+
+from .faroese import (
+    FAROESE_ABBREVIATIONS,
+    FAROESE_BETTERWORD_CONFIG,
+    FAROESE_NOT_ABBREVIATIONS,
+)
 
 try:
     from . import crf  # for CRF++ models
@@ -118,8 +136,13 @@ def sentence(
     model: Model | None = Model("[segment.sentence_model]"),
     abbreviations: list[str] = Config("segment.sentence_abbreviations"),
     not_abbreviations: list[str] = Config("segment.sentence_not_abbreviations"),
+    language: Language = Language(),
 ) -> None:
     """Split text into sentences."""
+    if str(language) == "fao":
+        abbreviations = list(dict.fromkeys((*FAROESE_ABBREVIATIONS, *(abbreviations or []))))
+        not_abbreviations = list(dict.fromkeys((*FAROESE_NOT_ABBREVIATIONS, *(not_abbreviations or []))))
+
     do_segmentation(
         text=text,
         out=out,
@@ -272,6 +295,28 @@ def download_bettertokenizer(out: ModelOutput = ModelOutput("segment/bettertoken
         out: The model to output.
     """
     out.download("https://github.com/spraakbanken/sparv-models/raw/master/segment/bettertokenizer.sv")
+
+
+@modelbuilder("Faroese model for BetterWordTokenizer", language=["fao"])
+def build_faroese_bettertokenizer(
+    out: ModelOutput = ModelOutput("segment/bettertokenizer.fo"),
+    token_list: ModelOutput = ModelOutput("segment/bettertokenizer.fo.tokens"),
+    resource: Model = Model(str(Path(__file__).with_name("faroese.py"))),
+) -> None:
+    """Install MMG's Faroese BetterWordTokenizer configuration.
+
+    Args:
+        out: Faroese BetterWordTokenizer configuration.
+        token_list: Empty token list; Swedish SALDO entries must not affect Faroese tokenization.
+        resource: Source resource tracked so changes to Faroese rules rebuild the generated model.
+
+    Raises:
+        FileNotFoundError: If the packaged Faroese resource cannot be found.
+    """
+    if not resource.path.is_file():
+        raise FileNotFoundError(resource.path)
+    out.write(FAROESE_BETTERWORD_CONFIG)
+    token_list.write("")
 
 
 @modelbuilder(
@@ -475,6 +520,10 @@ class BetterWordTokenizer:
 
                     if key == "case_sensitive":
                         self.case_sensitive = val.lower() == "true"
+                    elif key == "keep_ordinals":
+                        # Accepted only for compatibility with a short-lived MMG model version.
+                        # Sentence-final numeric periods now use the standard punctuation logic.
+                        pass
                     elif key.startswith("misc_"):
                         self.patterns["misc"].append(val)
                     elif key in {"start", "within", "end"}:
@@ -503,7 +552,17 @@ class BetterWordTokenizer:
                 self._word_tokenize_fmt
                 % {
                     "tokens": ("(?:" + "|".join(self.patterns["tokens"]) + ")|") if self.patterns["tokens"] else "",
-                    "abbrevs": ("(?:" + "|".join(re.escape(a + ".") for a in self.abbreviations) + ")|")
+                    "abbrevs": (
+                        "(?:"
+                        + "|".join(
+                            re.escape(a + ".")
+                            for a in sorted(
+                                self.abbreviations,
+                                key=lambda value: (-len(value), value.casefold(), value),
+                            )
+                        )
+                        + ")|"
+                    )
                     if self.abbreviations
                     else "",
                     "misc": "|".join(self.patterns["misc"]),
